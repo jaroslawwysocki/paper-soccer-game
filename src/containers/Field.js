@@ -1,54 +1,49 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useEffect, useContext, useRef } from 'react';
 import gameFieldClasses from '../styles/gameField.module.css';
 import { GeometricalParameters } from '../context';
 
 const field = () => {
   const geometricalParameters = useContext(GeometricalParameters);
-  const [fieldDimensions, setFieldDimensions] = useState({
-    width: 0,
-    height: 0
-  });
-  const canvasRef = React.createRef();
+  const fieldDimensions = {
+    width: geometricalParameters.numberOfColumns * geometricalParameters.fieldElementSizeInPx,
+    height: geometricalParameters.numberOfRowsWithGates * geometricalParameters.fieldElementSizeInPx
+  };
+  const canvasRef = useRef(null);
 
-  // TODO: passing [] as a second parameter to useEffect should generate behaviour
-  // as with componentDidMount. However, grid is not rendered then. Why?
   useEffect(() => {
-    const width = geometricalParameters.numberOfColumns * geometricalParameters.fieldElementSizeInPx;
-    const height = geometricalParameters.numberOfRowsWithGates * geometricalParameters.fieldElementSizeInPx;
-    setFieldDimensions({width, height});
     fillGrid();
-  });
+    console.log('useEffect called...');
+  }, []);
 
   const fillGrid = () => {
-    let canvas = canvasRef.current;
+    const canvas = canvasRef.current;
     if (canvas) {
       let canvasCtx = canvas.getContext('2d');
-      for (let i = 0; i < geometricalParameters.numberOfRowsWithGates; i++) {
-        for (let j = 0; j < geometricalParameters.numberOfColumns; j++) {
-          if (isGateRow(i)) {
-            drawGateRow(j, i, canvasCtx);
-          } else {
-            drawFieldRow(j, i, canvasCtx);
-          }
-        }
+      canvasCtx.fillStyle = 'border: 1px solid black';
+      for (let i = 0; i < geometricalParameters.numberOfRowsWithGates; i++)
+        for (let j = 0; j < geometricalParameters.numberOfColumns; j++)
+          if (isGateFragment(i, j)) {
+            drawFragment(j, i, canvasCtx);
+          } else if (!isGateRow(i)) {
+            drawFragment(j, i, canvasCtx);
       }
     }
   }
 
+  const isGateFragment = (rowNumber, columnNumber) => {
+    const isColumnNumberInTheMiddle = columnNumber === (geometricalParameters.numberOfColumns / 2) ||
+      columnNumber === (geometricalParameters.numberOfColumns / 2 - 1);
+    return isGateRow(rowNumber) && isColumnNumberInTheMiddle;
+  }
+
   const isGateRow = rowNumber => {
-    return rowNumber === 0 ||
-      rowNumber === (geometricalParameters.numberOfRowsWithGates - 1);
+    return rowNumber === 0 || rowNumber === (geometricalParameters.numberOfRowsWithGates - 1);
   }
 
-  const drawGateRow = () => {
-
-  }
-
-  const drawFieldRow = (columnNumber, rowNumber, canvasCtx) => {
+  const drawFragment = (columnNumber, rowNumber, canvasCtx) => {
     const gridSize = geometricalParameters.fieldElementSizeInPx;
     const x = columnNumber * gridSize;
     const y = rowNumber * gridSize;
-    canvasCtx.fillStyle = 'border: 1px solid black';
     canvasCtx.fillRect(x, y, gridSize, gridSize);
     canvasCtx.strokeRect(x, y, gridSize, gridSize);
     canvasCtx.clearRect(x, y, gridSize, gridSize);
