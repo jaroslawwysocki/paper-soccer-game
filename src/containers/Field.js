@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import gameFieldClasses from '../styles/gameField.module.css';
 import { GeometricalParameters } from '../context';
 
-const field = () => {
+const Field = () => {
   const geometricalParameters = useContext(GeometricalParameters);
   const fieldDimensions = {
     width: geometricalParameters.numberOfColumns * geometricalParameters.fieldElementSizeInPx,
@@ -14,21 +14,19 @@ const field = () => {
     y: fieldDimensions.height / 2
   };
   const [moves, setMoves] = useState([startingPoint]);
+  const [edges, setEdges] = useState([]);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      let canvasCtx = canvas.getContext('2d');
-      fillGrid(canvasCtx);
-      canvas.addEventListener('click', handleMove);
+  useEffect(
+    () => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        let canvasCtx = canvas.getContext('2d');
+        fillGrid(canvasCtx);
+        canvas.addEventListener('click', handleMove);
+      }
+      return () => canvas.removeEventListener('click', handleMove);
     }
-    return () => canvas.removeEventListener('click', handleMove);
-  }, []);
-
-  useEffect(() => {
-    console.log('Hope sth happens...');
-    console.log(moves);
-  }, [moves]);
+  );
 
   const fillGrid = canvasCtx => {
     canvasCtx.strokeStyle = 'white';
@@ -59,11 +57,9 @@ const field = () => {
   };
 
   const handleMove = event => {
-    const drawMove = (destinationPoint, canvasCtx) => {
+    const drawMove = (currentPoint, destinationPoint, canvasCtx) => {
       canvasCtx.lineWidth = 2;
       canvasCtx.strokeStyle = 'red';
-      const helperArray = [...moves];
-      const currentPoint = helperArray[helperArray.length - 1];
       canvasCtx.beginPath();
       canvasCtx.moveTo(currentPoint.x, currentPoint.y);
       canvasCtx.lineTo(destinationPoint.x, destinationPoint.y);
@@ -72,26 +68,43 @@ const field = () => {
 
     const canvas = canvasRef.current;
     if (canvas) {
-      const {x, y} = canvas.getBoundingClientRect();
-      const xCanvas = event.clientX - x;
-      const yCanvas = event.clientY - y;
-      const closestGridPoint = findClosestGridIntersectionPoint(xCanvas, yCanvas);
-
       let canvasCtx = canvas.getContext('2d');
-      drawMove(closestGridPoint, canvasCtx);
+      const {x, y} = canvas.getBoundingClientRect();
+      const canvasPoint = {
+        x: event.clientX - x,
+        y: event.clientY - y
+      }
 
-      const newMoves = [...moves, {
-        x: closestGridPoint.x,
-        y: closestGridPoint.y
-      }];
-      setMoves(newMoves);
+      const helperArray = [...moves];
+      const currentPoint = helperArray[helperArray.length - 1];
+
+      const closestGridPoint = findClosestGridIntersectionPoint(canvasPoint);
+      
+      const newEdge = {
+        x1: currentPoint.x,
+        y1: currentPoint.y,
+        x2: closestGridPoint.x,
+        y2: closestGridPoint.y
+      };
+      if (isPointChosenCorrectly(closestGridPoint) && isEdgeFree(newEdge)) {
+        drawMove(currentPoint, closestGridPoint, canvasCtx);
+
+        const newMoves = [...moves, {
+          x: closestGridPoint.x,
+          y: closestGridPoint.y
+        }];
+        setMoves(newMoves);
+
+        const newEdges = [...edges, newEdge];
+        setEdges(newEdges);
+      }
     }
   };
 
-  const findClosestGridIntersectionPoint = (xCanvas, yCanvas) => {
+  const findClosestGridIntersectionPoint = canvasPoint => {
     return {
-      x: findNearestGridCoordinate(xCanvas),
-      y: findNearestGridCoordinate(yCanvas)
+      x: findNearestGridCoordinate(canvasPoint.x),
+      y: findNearestGridCoordinate(canvasPoint.y)
     };
   };
 
@@ -103,6 +116,31 @@ const field = () => {
     return (coordinate - smallerGridCoordinate) < (biggerGridCoordinate - coordinate)
       ? smallerGridCoordinate : biggerGridCoordinate;
   };
+
+  const isPointChosenCorrectly = closestGridPoint => {
+    const helperArray = [...moves];
+    const currentPoint = helperArray[helperArray.length - 1];
+    const xDiff = currentPoint.x - closestGridPoint.x;
+    const yDiff = currentPoint.y - closestGridPoint.y;
+    const distance = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+    return distance <= (Math.SQRT2 * geometricalParameters.fieldElementSizeInPx);
+  }
+
+  const isEdgeFree = newEdge => {
+    const index = edges.findIndex(edge => {
+      return (edge.x1 === newEdge.x1 &&
+          edge.y1 === newEdge.y1 &&
+          edge.x2 === newEdge.x2 &&
+          edge.y2 === newEdge.y2
+        ) || (
+          edge.x1 === newEdge.x2 &&
+          edge.y1 === newEdge.y2 &&
+          edge.x2 === newEdge.x1 &&
+          edge.y2 === newEdge.y1
+        );
+    });
+    return index === -1;
+  }
 
   return (
     <canvas
@@ -116,4 +154,4 @@ const field = () => {
   );
 }
 
-export default field;
+export default Field;

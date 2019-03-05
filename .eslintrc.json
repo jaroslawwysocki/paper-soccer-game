@@ -1,0 +1,11 @@
+{
+  "parser": "babel-eslint",
+  "plugins": [
+    "react-hooks"
+  ],
+  "rules": {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "no-use-before-define": ["error", { "functions": false, "classes": false, "variables": false }]
+  }
+}
