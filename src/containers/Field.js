@@ -69,15 +69,9 @@ const Field = () => {
     const canvas = canvasRef.current;
     if (canvas) {
       let canvasCtx = canvas.getContext('2d');
-      const {x, y} = canvas.getBoundingClientRect();
-      const canvasPoint = {
-        x: event.clientX - x,
-        y: event.clientY - y
-      }
-
-      const helperArray = [...moves];
-      const currentPoint = helperArray[helperArray.length - 1];
-
+      
+      const canvasPoint = getCanvasPoint(event, canvas);
+      const currentPoint = getCurrentPoint(); 
       const closestGridPoint = findClosestGridIntersectionPoint(canvasPoint);
       
       const newEdge = {
@@ -101,6 +95,19 @@ const Field = () => {
     }
   };
 
+  const getCanvasPoint = (event, canvas) => {
+    const {x, y} = canvas.getBoundingClientRect();
+    return {
+      x: event.clientX - x,
+      y: event.clientY - y
+    };
+  }
+
+  const getCurrentPoint = () => {
+    const helperArray = [...moves];
+    return helperArray[helperArray.length - 1];
+  }
+
   const findClosestGridIntersectionPoint = canvasPoint => {
     return {
       x: findNearestGridCoordinate(canvasPoint.x),
@@ -118,8 +125,7 @@ const Field = () => {
   };
 
   const isPointChosenCorrectly = closestGridPoint => {
-    const helperArray = [...moves];
-    const currentPoint = helperArray[helperArray.length - 1];
+    const currentPoint = getCurrentPoint();
     const xDiff = currentPoint.x - closestGridPoint.x;
     const yDiff = currentPoint.y - closestGridPoint.y;
     const distance = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
