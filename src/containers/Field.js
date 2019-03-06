@@ -16,6 +16,7 @@ const Field = () => {
   };
   const [moves, setMoves] = useState([startingPoint]);
   const [edges, setEdges] = useState([]);
+  const [isFirstPlayerMove, setIsFirstPlayerMove] = useState(true);
 
   useEffect(
     () => {
@@ -23,9 +24,10 @@ const Field = () => {
       if (fieldCanvas) {
         let fieldCanvasCtx = fieldCanvas.getContext('2d');
         fillGrid(fieldCanvasCtx);
+        excludeBordersFromPossibleMoves();
       }
     },
-    [fillGrid]
+    [fillGrid, excludeBordersFromPossibleMoves]
   );
 
   useEffect(
@@ -66,10 +68,113 @@ const Field = () => {
     canvasCtx.strokeRect(x, y, gridSize, gridSize);
   };
 
+  const excludeBordersFromPossibleMoves = () => {
+    const excludeTopGate = () => {
+      const leftH = {
+        x1: fieldDimensions.width / 2,
+        y1: 0,
+        x2: (fieldDimensions.width / 2) - geometricalParameters.fieldElementSizeInPx,
+        y2: 0
+      };
+      const rightH = {
+        x1: fieldDimensions.width / 2,
+        y1: 0,
+        x2: (fieldDimensions.width / 2) + geometricalParameters.fieldElementSizeInPx,
+        y2: 0
+      };
+      const leftV = {
+        x1: (fieldDimensions.width / 2) - geometricalParameters.fieldElementSizeInPx,
+        y1: 0,
+        x2: (fieldDimensions.width / 2) - geometricalParameters.fieldElementSizeInPx,
+        y2: geometricalParameters.fieldElementSizeInPx
+      };
+      const rightV = {
+        x1: (fieldDimensions.width / 2) + geometricalParameters.fieldElementSizeInPx,
+        y1: 0,
+        x2: (fieldDimensions.width / 2) + geometricalParameters.fieldElementSizeInPx,
+        y2: geometricalParameters.fieldElementSizeInPx
+      };
+      return [leftH, rightH, leftV, rightV];
+    };
+    const excludeBottomGate = () => {
+      const leftH = {
+        x1: fieldDimensions.width / 2,
+        y1: fieldDimensions.height,
+        x2: (fieldDimensions.width / 2) - geometricalParameters.fieldElementSizeInPx,
+        y2: fieldDimensions.height
+      };
+      const rightH = {
+        x1: fieldDimensions.width / 2,
+        y1: fieldDimensions.height,
+        x2: (fieldDimensions.width / 2) + geometricalParameters.fieldElementSizeInPx,
+        y2: fieldDimensions.height
+      };
+      const leftV = {
+        x1: (fieldDimensions.width / 2) - geometricalParameters.fieldElementSizeInPx,
+        y1: fieldDimensions.height,
+        x2: (fieldDimensions.width / 2) - geometricalParameters.fieldElementSizeInPx,
+        y2: fieldDimensions.height - geometricalParameters.fieldElementSizeInPx
+      };
+      const rightV = {
+        x1: (fieldDimensions.width / 2) + geometricalParameters.fieldElementSizeInPx,
+        y1: fieldDimensions.height,
+        x2: (fieldDimensions.width / 2) + geometricalParameters.fieldElementSizeInPx,
+        y2: fieldDimensions.height - geometricalParameters.fieldElementSizeInPx
+      };
+      return [leftH, rightH, leftV, rightV];
+    };
+    const excludeHorizontalBorder = (yConstant) => {
+      const excludedEdges = [];
+      for(let i = 0; i < ((geometricalParameters.numberOfColumns / 2) - 1); i++) {
+        let x = i * geometricalParameters.fieldElementSizeInPx;
+        excludedEdges.push({
+          x1: x, y1: yConstant,
+          x2: x + geometricalParameters.fieldElementSizeInPx, y2: yConstant
+        });
+      }
+      for(let i = 0; i < ((geometricalParameters.numberOfColumns / 2) - 1); i++) {
+        let x = fieldDimensions.width - i * geometricalParameters.fieldElementSizeInPx;
+        excludedEdges.push({
+          x1: x, y1: yConstant,
+          x2: x - geometricalParameters.fieldElementSizeInPx, y2: yConstant
+        });
+      }
+      return excludedEdges;
+    };
+    const excludeVerticalBorder = (xConstant) => {
+      const excludedEdges = [];
+      for(let i = 0; i < (geometricalParameters.numberOfRowsWithGates - 2); i++) {
+        let y = (i + 1) * geometricalParameters.fieldElementSizeInPx;
+        excludedEdges.push({
+          x1: xConstant, y1: y,
+          x2: xConstant, y2: y + geometricalParameters.fieldElementSizeInPx
+        });
+      }
+      return excludedEdges;
+    };
+
+    const excludedTG = excludeTopGate();
+    const excludedBG = excludeBottomGate();
+    const excludedTB = excludeHorizontalBorder(geometricalParameters.fieldElementSizeInPx);
+    const excludedBB = excludeHorizontalBorder(fieldDimensions.height - geometricalParameters.fieldElementSizeInPx);
+    const excludedLB = excludeVerticalBorder(0);
+    const excludedRB = excludeVerticalBorder(fieldDimensions.width);
+    const excludedEdges = [
+      ...edges,
+      ...excludedTG,
+      ...excludedBG,
+      ...excludedTB,
+      ...excludedBB,
+      ...excludedLB,
+      ...excludedRB
+    ];
+    setEdges(excludedEdges);
+  }
+
   const handleMove = event => {
     const drawMove = (currentPoint, destinationPoint, canvasCtx) => {
       canvasCtx.lineWidth = 2;
-      canvasCtx.strokeStyle = 'red';
+      canvasCtx.strokeStyle = isFirstPlayerMove ? 'red' : 'yellow';
       canvasCtx.beginPath();
       canvasCtx.moveTo(currentPoint.x, currentPoint.y);
       canvasCtx.lineTo(destinationPoint.x, destinationPoint.y);
