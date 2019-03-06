@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
-import Field from './containers/Field';
+import PaperSoccer from './containers/PaperSoccer';
 
 class App extends Component {
   render() {
     return (
-      <Field />
+      <PaperSoccer />
     );
   }
 }
