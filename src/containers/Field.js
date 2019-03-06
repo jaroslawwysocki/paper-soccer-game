@@ -8,7 +8,8 @@ const Field = () => {
     width: geometricalParameters.numberOfColumns * geometricalParameters.fieldElementSizeInPx,
     height: geometricalParameters.numberOfRowsWithGates * geometricalParameters.fieldElementSizeInPx
   };
-  const canvasRef = useRef(null);
+  const fieldCanvasRef = useRef(null);
+  const gameCanvasRef = useRef(null);
   const startingPoint = {
     x: fieldDimensions.width / 2,
     y: fieldDimensions.height / 2
@@ -18,13 +19,22 @@ const Field = () => {
 
   useEffect(
     () => {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        let canvasCtx = canvas.getContext('2d');
-        fillGrid(canvasCtx);
-        canvas.addEventListener('click', handleMove);
+      const fieldCanvas = fieldCanvasRef.current;
+      if (fieldCanvas) {
+        let fieldCanvasCtx = fieldCanvas.getContext('2d');
+        fillGrid(fieldCanvasCtx);
       }
-      return () => canvas.removeEventListener('click', handleMove);
+    },
+    [fillGrid]
+  );
+
+  useEffect(
+    () => {
+      const gameCanvas = gameCanvasRef.current;
+      if (gameCanvas) {
+        gameCanvas.addEventListener('click', handleMove);
+      }
+      return () => gameCanvas.removeEventListener('click', handleMove);
     }
   );
 
@@ -66,7 +76,7 @@ const Field = () => {
       canvasCtx.stroke();
     };
 
-    const canvas = canvasRef.current;
+    const canvas = gameCanvasRef.current;
     if (canvas) {
       let canvasCtx = canvas.getContext('2d');
       
@@ -149,14 +159,28 @@ const Field = () => {
   }
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={fieldDimensions.width}
-      height={fieldDimensions.height}
-      className={gameFieldClasses.GameField}
-    >
-      Sorry, please update/change your browser to see the proper content.
-    </canvas>
+    <>
+      <div className={gameFieldClasses.FieldDiv}>
+        <canvas
+          ref={fieldCanvasRef}
+          width={fieldDimensions.width}
+          height={fieldDimensions.height}
+          className={gameFieldClasses.Field}
+        >
+          Sorry, please update/change your browser to see the proper content.
+        </canvas>
+      </div>
+      <div className={gameFieldClasses.GameDiv}>
+        <canvas
+          ref={gameCanvasRef}
+          width={fieldDimensions.width}
+          height={fieldDimensions.height}
+          className={gameFieldClasses.Game}
+        >
+          Here should you see the moves showing up!
+        </canvas>
+      </div>
+    </>
   );
 }
 

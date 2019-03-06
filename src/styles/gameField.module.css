@@ -1,10 +1,40 @@
+#root {
+  position: relative;
+}
+
 body {
   width: 100%;
   height: 100%;
   background-color: forestgreen;
 }
 
-.GameField {
+.FieldDiv {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -10;
+}
+
+.Field {
+  padding-left: 0;
+  padding-right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+.GameDiv {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+
+.Game {
   padding-left: 0;
   padding-right: 0;
   margin-left: auto;
