@@ -9,19 +9,19 @@ const PaperSoccer = () => {
     width: geometricalParameters.numberOfColumns * geometricalParameters.fieldElementSizeInPx,
     height: geometricalParameters.numberOfRowsWithGates * geometricalParameters.fieldElementSizeInPx
   };
-  const gameCanvasRef = useRef(null);
   const startingPoint = {
     x: fieldDimensions.width / 2,
     y: fieldDimensions.height / 2
   };
+  const gameCanvasRef = useRef(null);
   const [moves, setMoves] = useState([startingPoint]);
   const [edges, setEdges] = useState([]);
   const [goals, setGoals] = useState([]);
+  const [isGameInProgress, setIsGameInProgress] = useState(true);
   const [currentPlayer, setCurrentPlayer] = useState({
     firstPlayer: true,
     secondPlayer: false
   });
-  let winner = null;
 
   useEffect(
     () => {
@@ -50,42 +50,45 @@ const PaperSoccer = () => {
       canvasCtx.stroke();
     };
 
-    const canvas = gameCanvasRef.current;
-    if (canvas) {
-      let canvasCtx = canvas.getContext('2d');
-      
-      const canvasPoint = getCanvasPoint(event, canvas);
-      const currentPoint = getCurrentPoint(); 
-      const closestGridPoint = findClosestGridIntersectionPoint(canvasPoint);
-      
-      const newEdge = {
-        x1: currentPoint.x,
-        y1: currentPoint.y,
-        x2: closestGridPoint.x,
-        y2: closestGridPoint.y
-      };
-      if (isPointChosenCorrectly(closestGridPoint) && isEdgeFree(newEdge)) {
-        drawMove(currentPoint, closestGridPoint, canvasCtx);
+    if (isGameInProgress) {
+      const canvas = gameCanvasRef.current;
+      if (canvas) {
+        let canvasCtx = canvas.getContext('2d');
+        
+        const canvasPoint = getCanvasPoint(event, canvas);
+        const currentPoint = getCurrentPoint(); 
+        const closestGridPoint = findClosestGridIntersectionPoint(canvasPoint);
+        
+        const newEdge = {
+          x1: currentPoint.x,
+          y1: currentPoint.y,
+          x2: closestGridPoint.x,
+          y2: closestGridPoint.y
+        };
+        if (isPointChosenCorrectly(closestGridPoint) && isEdgeFree(newEdge)) {
+          drawMove(currentPoint, closestGridPoint, canvasCtx);
 
-        const newMoves = [...moves, {
-          x: closestGridPoint.x,
-          y: closestGridPoint.y
-        }];
-        setMoves(newMoves);
+          const newMoves = [...moves, {
+            x: closestGridPoint.x,
+            y: closestGridPoint.y
+          }];
+          setMoves(newMoves);
 
-        const oldEdges = [...edges];
-        const newEdges = [...edges, newEdge];
-        setEdges(newEdges);
+          const oldEdges = [...edges];
+          const newEdges = [...edges, newEdge];
+          setEdges(newEdges);
 
-        if (isCurrentMoveAGoal(closestGridPoint)) {
-          const winner = currentPlayer.firstPlayer ? '1' : '2';
-          alert('Player ' + winner + ' has won!');
-        }
-        else if (isNoPossibleMoveForCurrentPlayer(oldEdges, closestGridPoint)) {
-          setCurrentPlayer({
-            firstPlayer: !currentPlayer.firstPlayer,
-            secondPlayer: !currentPlayer.secondPlayer
-          });
+          if (isCurrentMoveAGoal(closestGridPoint)) {
+            setIsGameInProgress(false);
+            const winner = closestGridPoint.y === 0 ? '1' : '2';
+            alert('Player ' + winner + ' has won!');
+          }
+          else if (isNoPossibleMoveForCurrentPlayer(oldEdges, closestGridPoint)) {
+            setCurrentPlayer({
+              firstPlayer: !currentPlayer.firstPlayer,
+              secondPlayer: !currentPlayer.secondPlayer
+            });
+          }
         }
       }
     }
@@ -273,19 +276,20 @@ const PaperSoccer = () => {
   };
 
   const initialGoals = () => {
-    const getGateGoals = (yConstant) => {
+    const getGateGoals = (yConstant, gateOwner) => {
       const topGateGoals = [];
       for (let i = 0; i < 3; i++) {
         topGateGoals.push({
           x: (fieldDimensions.width / 2) - (1 - i) * geometricalParameters.fieldElementSizeInPx,
-          y: yConstant
+          y: yConstant,
+          gateOwner: gateOwner
         });
       }
       return topGateGoals;
     };
 
-    const topGateGoals = getGateGoals(0);
-    const bottomGateGoals = getGateGoals(fieldDimensions.height);
+    const topGateGoals = getGateGoals(0, 'firstPlayer');
+    const bottomGateGoals = getGateGoals(fieldDimensions.height, 'secondPlayer');
     const gameGoals = [
       ...topGateGoals,
       ...bottomGateGoals
