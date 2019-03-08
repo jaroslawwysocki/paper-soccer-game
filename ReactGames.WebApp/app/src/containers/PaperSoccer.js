@@ -16,13 +16,18 @@ const PaperSoccer = () => {
   };
   const [moves, setMoves] = useState([startingPoint]);
   const [edges, setEdges] = useState([]);
-  const [isFirstPlayerMove, setIsFirstPlayerMove] = useState(true);
+  const [goals, setGoals] = useState([]);
+  const [currentPlayer, setCurrentPlayer] = useState({
+    firstPlayer: true,
+    secondPlayer: false
+  });
+  let winner = null;
 
   useEffect(
     () => {
-      excludeBordersFromPossibleMoves();
+      initialFieldData()
     },
-    [excludeBordersFromPossibleMoves]
+    [initialFieldData]
   );
 
   useEffect(
@@ -38,7 +43,7 @@ const PaperSoccer = () => {
   const handleMove = event => {
     const drawMove = (currentPoint, destinationPoint, canvasCtx) => {
       canvasCtx.lineWidth = 2;
-      canvasCtx.strokeStyle = isFirstPlayerMove ? 'red' : 'yellow';
+      canvasCtx.strokeStyle = currentPlayer.firstPlayer ? 'red' : 'yellow';
       canvasCtx.beginPath();
       canvasCtx.moveTo(currentPoint.x, currentPoint.y);
       canvasCtx.lineTo(destinationPoint.x, destinationPoint.y);
@@ -68,10 +73,39 @@ const PaperSoccer = () => {
         }];
         setMoves(newMoves);
 
+        const oldEdges = [...edges];
         const newEdges = [...edges, newEdge];
         setEdges(newEdges);
+
+        if (isCurrentMoveAGoal(closestGridPoint)) {
+          const winner = currentPlayer.firstPlayer ? '1' : '2';
+          alert('Player ' + winner + ' has won!');
+        }
+        else if (isNoPossibleMoveForCurrentPlayer(oldEdges, closestGridPoint)) {
+          setCurrentPlayer({
+            firstPlayer: !currentPlayer.firstPlayer,
+            secondPlayer: !currentPlayer.secondPlayer
+          });
+        }
       }
     }
+  };
+
+  const isCurrentMoveAGoal = closestGridPoint => {
+    const index = goals.findIndex(goal => {
+      return (goal.x === closestGridPoint.x) && (goal.y === closestGridPoint.y);
+    });
+    return index !== -1;
+  };
+
+  const isNoPossibleMoveForCurrentPlayer = (edgesTakenBeforeCurrentMove, closestGridPoint) => {
+    const index = edgesTakenBeforeCurrentMove.findIndex(edge => {
+      return (edge.x1 === closestGridPoint.x &&
+          edge.y1 === closestGridPoint.y) ||
+          (edge.x2 === closestGridPoint.x &&
+          edge.y2 === closestGridPoint.y)
+    });
+    return index === -1;
   };
 
   const getCanvasPoint = (event, canvas) => {
@@ -80,12 +114,12 @@ const PaperSoccer = () => {
       x: event.clientX - x,
       y: event.clientY - y
     };
-  }
+  };
 
   const getCurrentPoint = () => {
     const helperArray = [...moves];
     return helperArray[helperArray.length - 1];
-  }
+  };
 
   const findClosestGridIntersectionPoint = canvasPoint => {
     return {
@@ -109,7 +143,7 @@ const PaperSoccer = () => {
     const yDiff = currentPoint.y - closestGridPoint.y;
     const distance = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
     return distance <= (Math.SQRT2 * geometricalParameters.fieldElementSizeInPx);
-  }
+  };
 
   const isEdgeFree = newEdge => {
     const index = edges.findIndex(edge => {
@@ -125,7 +159,12 @@ const PaperSoccer = () => {
         );
     });
     return index === -1;
-  }
+  };
+
+  const initialFieldData = () => {
+    excludeBordersFromPossibleMoves();
+    initialGoals();
+  };
 
   // Strange behaviour - when transformed to 'function excludeBordersFromPossibleMoves()'
   // (for 'was used before defined' error) Chrome was using sooo much CPU.
@@ -231,7 +270,28 @@ const PaperSoccer = () => {
       ...excludedRB
     ];
     setEdges(excludedEdges);
-  }
+  };
+
+  const initialGoals = () => {
+    const getGateGoals = (yConstant) => {
+      const topGateGoals = [];
+      for (let i = 0; i < 3; i++) {
+        topGateGoals.push({
+          x: (fieldDimensions.width / 2) - (1 - i) * geometricalParameters.fieldElementSizeInPx,
+          y: yConstant
+        });
+      }
+      return topGateGoals;
+    };
+
+    const topGateGoals = getGateGoals(0);
+    const bottomGateGoals = getGateGoals(fieldDimensions.height);
+    const gameGoals = [
+      ...topGateGoals,
+      ...bottomGateGoals
+    ];
+    setGoals(gameGoals);
+  };
 
   return (
     <>
